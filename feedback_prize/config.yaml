@@ -1,0 +1,28 @@
+# =================== data configurations ========================
+
+datafile_rootpath : ../input/feedback-prize-2021
+
+n_folds : 5
+fold : 0
+
+EXP_NUM: 1
+task: ner
+
+DOWNLOADED_MODEL_PATH : models/longformer-base-4096
+
+model_checkpoint : allenai/longformer-base-4096
+#model_checkpoint : google/bigbird-roberta-base
+
+stride : 128
+min_tokens : 6
+max_length: 1024
+N_LABELS : 15
+
+# =================== TRAINING HYPERPARAMS ========================
+max_length: 1024
+train_batch_size : 4
+valid_batch_size : 4
+epochs : 5
+learning_rates : [2.5e-5, 2.5e-5, 2.5e-6, 2.5e-6, 2.5e-7]
+max_grad_norm : 10
+
