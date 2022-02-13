@@ -17,14 +17,19 @@ def make_NER_dataframe(datafile_rootpath: str, save_data=True, n_splits: int or 
     n_splits: `False`の時、CVを行わない。`int`の時、どれだけの数のfoldを作成するか。
     """
     # ラベルデータの読み込み
-    labels = pd.read_csv(os.path.join(datafile_rootpath, "train.csv"))
+    train = pd.read_csv(os.path.join(datafile_rootpath, "train.csv"))
+    
+    path = Path('../input/feedback-prize-2021/train')
 
-    # テキストデータの読み込み
-    ids, texts = [], []
-    for f in tqdm.tqdm(os.listdir(os.path.join(datafile_rootpath, "train"))):
-        ids.append(f.replace('.txt', ''))
-        texts.append(open(os.path.join(datafile_rootpath, "train", f), 'r').read())
-    texts = pd.DataFrame({'id': ids, 'text': texts})
+    def get_raw_text(ids):
+        with open(path/f'{ids}.txt', 'r') as file: data = file.read()
+        return data
+    
+    df1 = train.groupby('id')['discourse_type'].apply(list).reset_index(name='classlist')
+    df2 = train.groupby('id')['predictionstring'].apply(list).reset_index(name='predictionstrings')
+
+    df = pd.merge(df1, df2, how='inner', on='id')
+    df['text'] = df['id'].apply(get_raw_text)
 
     # テキストをNERラベルに置き換える
     all_data = []
@@ -35,7 +40,7 @@ def make_NER_dataframe(datafile_rootpath: str, save_data=True, n_splits: int or 
             ner_labels = ["O"] * doc_length
 
             # 2. 同じidのラベルデータを読み込む
-            for j in labels[labels["id"] == items[1]["id"]].iterrows():
+            for j in train[train["id"] == items[1]["id"]].iterrows():
                 # discourse typeとその範囲を読み込む
                 discourse = j[1]["discourse_type"]
                 list_idx = [int(x) for x in j[1]["predictionstring"].split(" ")]    
@@ -46,15 +51,15 @@ def make_NER_dataframe(datafile_rootpath: str, save_data=True, n_splits: int or 
                 for l in list_idx[1:]:
                     ner_labels[l] = f"I-{discourse}"
             all_data.append(ner_labels)
-    texts["annotation"] = all_data
+    df["annotation"] = all_data
 
     # validationを行う
     if n_splits:
         cv = KFold(n_splits=n_splits, shuffle=True, random_state=seed)
         fold = 0
-        for train_idx, val_idx in cv.split(texts):
-            train_df = texts.iloc[train_idx]
-            val_df = texts.iloc[val_idx]
+        for train_idx, val_idx in cv.split(df):
+            train_df = df.iloc[train_idx]
+            val_df = df.iloc[val_idx]
             if save_data:
                 os.makedirs(os.path.join(datafile_rootpath, str(n_splits) + "_fold", "fold" + str(fold)), exist_ok=True)
                 train_df.to_csv(os.path.join(datafile_rootpath, str(n_splits) + "_fold", "fold" + str(fold), "train_ner.csv"), index=False)
@@ -62,7 +67,7 @@ def make_NER_dataframe(datafile_rootpath: str, save_data=True, n_splits: int or 
             fold += 1
     else:
         if save_data:
-            texts.to_csv(os.path.join(datafile_rootpath, "train_ner.csv"), index=False)
+            df.to_csv(os.path.join(datafile_rootpath, "train_ner.csv"), index=False)
 
 
 
