@@ -1,8 +1,47 @@
-import os, sys
+import os, sys, tqdm
+from typing import Tuple, Dict
+import numpy as np
 import pandas as pd
 
 
-def score_feedback_comp(pred_df: pd.DataFrame, ner_df:pd.DataFrame) -> int:
+def score_feedback_comp(pred_df: pd.DataFrame, ner_df:pd.DataFrame) -> Tuple[int, Dict[str, int]]:
+    """
+    Feedback Prizeのデフォルトの提出csvと読み込んだcsvから各クラスのF1スコアを算出する
+
+    Parameter
+    ---------
+    pred_df: pd.Dataframe
+        column = [["id", "class", "predictionstring"]]
+    ner_df: pd.Dataframe
+        column = [["id", "text", "classlist", "predictionstrings", "annotation"]]
+    
+    Return
+    ------
+    int:
+        全体のF1スコア
+    Dict[str, int]:
+        keyクラスのF1スコア
+    """
+    # ground_truth dataframeの作成
+    gt_df = ner_df[["id", "classlist", "predictionstrings"]].reset_index(drop=True).copy()
+    gt_df["predictionstring"] = gt_df["predictionstrings"]
+    gt_df = gt_df[["id", "classlist", "predictionstring"]].reset_index(drop=True).copy()
+    gt_df = gt_df.explode(["classlist", "predictionstring"]).reset_index(drop=True)
+
+    f1s = {}
+    CLASSES = pred_df["class"].unique()
+    for c in tqdm.tqdm(CLASSES):
+        p_df = pred_df.loc[pred_df["class"] == c].copy()
+        g_df = gt_df.loc[gt_df["classlist"] == c].copy()
+        f1 = _calc_f1_score(p_df, g_df)
+        f1s[c] = f1
+    f1 = np.mean([i for i in f1s.values()])
+    return f1, f1s
+
+
+
+
+def _calc_f1_score(pred_df: pd.DataFrame, gt_df:pd.DataFrame) -> int:
     """
     Feedback Prizeのデフォルトの提出csvと読み込んだcsvからF1スコアを算出する
 
@@ -11,13 +50,13 @@ def score_feedback_comp(pred_df: pd.DataFrame, ner_df:pd.DataFrame) -> int:
     pred_df: pd.Dataframe
         column = [["id", "class", "predictionstring"]]
     ner_df: pd.Dataframe
-        column = [["id", "text", "classlist", "predictionstrings", "annotation"]]
+        column = [["id", "classlist", "predictionstring"]]
     """
-    # ground_truth dataframeの作成
+    """# ground_truth dataframeの作成
     gt_df = ner_df[["id", "classlist", "predictionstrings"]].reset_index(drop=True).copy()
     gt_df["predictionstring"] = gt_df["predictionstrings"]
     gt_df = gt_df[["id", "classlist", "predictionstring"]].reset_index(drop=True).copy()
-    gt_df = gt_df.explode(["classlist", "predictionstring"]).reset_index(drop=True)
+    gt_df = gt_df.explode(["classlist", "predictionstring"]).reset_index(drop=True)"""
     gt_df["gt_id"] = gt_df.index
 
     # pred_dfの準備
