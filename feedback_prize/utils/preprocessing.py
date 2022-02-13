@@ -1,4 +1,4 @@
-import os, sys, tqdm
+import os, sys, tqdm, ast, pathlib
 from random import random
 from typing import Tuple
 import pandas as pd
@@ -19,7 +19,7 @@ def make_NER_dataframe(datafile_rootpath: str, save_data=True, n_splits: int or 
     # ラベルデータの読み込み
     train = pd.read_csv(os.path.join(datafile_rootpath, "train.csv"))
     
-    path = Path('../input/feedback-prize-2021/train')
+    path = pathlib.Path(os.path.join(datafile_rootpath, 'train'))
 
     def get_raw_text(ids):
         with open(path/f'{ids}.txt', 'r') as file: data = file.read()
@@ -33,7 +33,7 @@ def make_NER_dataframe(datafile_rootpath: str, save_data=True, n_splits: int or 
 
     # テキストをNERラベルに置き換える
     all_data = []
-    with tqdm.tqdm(texts.iterrows(), total=len(texts)) as t:
+    with tqdm.tqdm(df.iterrows(), total=len(df)) as t:
         for k, items in enumerate(t):
             # 1. NERラベルを格納するために、テキスト長のダミーラベルを作る
             doc_length = items[1]["text"].split().__len__()
@@ -93,6 +93,9 @@ def read_kfold_file(datafile_rootpath: str, fold: int, n_splits: int or bool = 5
     # データの読み込み
     train_df = pd.read_csv(os.path.join(datafile_rootpath, str(n_splits) + "_fold", "fold" + str(fold), "train_ner.csv"))
     val_df = pd.read_csv(os.path.join(datafile_rootpath, str(n_splits) + "_fold", "fold" + str(fold), "val_ner.csv"))
+
+    train_df[["classlist", "predictionstrings", "annotation"]] = train_df[["classlist", "predictionstrings", "annotation"]].applymap(lambda x: ast.literal_eval(x))
+    val_df[["classlist", "predictionstrings", "annotation"]] = val_df[["classlist", "predictionstrings", "annotation"]].applymap(lambda x: ast.literal_eval(x))
 
     # lookupテーブルを作る
     lookup_dict = ['O', 'B-Lead', 'I-Lead', 'B-Position', 'I-Position', 'B-Claim', 'I-Claim', 'B-Counterclaim', 'I-Counterclaim', 'B-Rebuttal', 'I-Rebuttal', 'B-Evidence', 'I-Evidence', 'B-Concluding Statement', 'I-Concluding Statement']
