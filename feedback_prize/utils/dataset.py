@@ -92,6 +92,8 @@ class AugmentDataset(torch.utils.data.Dataset):
         # DataAugment
         if self.augmenter and self.phase == "train":
             aug_text, aug_label = self.augmenter.augment(text, word_labels)
+        else:
+            aug_text, aug_label = text, word_labels
 
         # tokenize
         encoding = self.tokenizer(aug_text.split(), is_split_into_words=True, padding="max_length", truncation=True, max_length=self.max_len)
