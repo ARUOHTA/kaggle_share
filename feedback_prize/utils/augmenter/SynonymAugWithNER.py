@@ -162,7 +162,7 @@ class SynonymAugWithNER(augbase.WordAugmenterWithNER):
         if aug_src == 'wordnet':
             return nmw.WordNet(lang=lang, is_synonym=True)
         elif aug_src == 'ppdb':
-            return init_ppdb_model(dict_path=dict_path, force_reload=force_reload)
+            return _init_ppdb_model(dict_path=dict_path, force_reload=force_reload)
 
         raise ValueError('aug_src is not one of `wordnet` or `ppdb` while {} is passed.'.format(aug_src))
 
@@ -172,7 +172,7 @@ class SynonymAugWithNER(augbase.WordAugmenterWithNER):
 PPDB_MODEL = {}
 
 
-def init_ppdb_model(dict_path, force_reload=False):
+def _init_ppdb_model(dict_path, force_reload=False):
     # Load model once at runtime
     global PPDB_MODEL
 
